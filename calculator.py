@@ -45,13 +45,34 @@ To submit your homework:
 def add(*args):
     """ Returns a STRING with the sum of the arguments """
 
-    # TODO: Fill sum with the correct value, based on the
+    # DONE: Fill sum with the correct value, based on the
     # args provided.
-    sum = "0"
+    return int(args[0]) + int(args[1])
 
-    return sum
 
-# TODO: Add functions for handling more arithmetic operations.
+def divide(*args):
+    # DONE (bonus): Add error handling for a user attempting
+    # to divide by zero.
+
+    if int(args[1]) == 0:
+        return "Cannot divide by 0"
+    else:
+        return int(args[0]) / int(args[1])
+
+
+def instructions():
+    return "<html>Here's how to use this page:<br>" \
+           "Input a URL containing one of the following actions, and two numbers, separated by forward slashes:" \
+           "<br>add, divide, multiply or subtract<br>Example: /add/1/5 would return an answer of 6</html>"
+
+
+def multiply(*args):
+    return int(args[0]) * int(args[1])
+
+
+def subtract(*args):
+    return int(args[0]) - int(args[1])
+
 
 def resolve_path(path):
     """
@@ -59,26 +80,65 @@ def resolve_path(path):
     arguments.
     """
 
-    # TODO: Provide correct values for func and args. The
+    # DONE: Provide correct values for func and args. The
     # examples provide the correct *syntax*, but you should
     # determine the actual values of func and args using the
     # path.
-    func = add
-    args = ['25', '32']
+    # func = add
+    # args = ['25', '32']
+
+    funcs = {
+        '': instructions,
+        'add': add,
+        'divide': divide,
+        'multiply': multiply,
+        'subtract': subtract,
+    }
+
+    path = path.strip('/').split('/')
+
+    func_name = path[0]
+    args = path[1:]
+
+    try:
+        func = funcs[func_name]
+    except KeyError:
+        raise NameError
 
     return func, args
 
+
 def application(environ, start_response):
-    # TODO: Your application code from the book database
+    # DONE: Your application code from the book database
     # work here as well! Remember that your application must
     # invoke start_response(status, headers) and also return
     # the body of the response in BYTE encoding.
-    #
-    # TODO (bonus): Add error handling for a user attempting
-    # to divide by zero.
-    pass
+
+    headers = [("Content-type", "text/html")]
+    try:
+        path = environ.get('PATH_INFO', None)
+        if path is None:
+            raise NameError
+        func, args = resolve_path(path)
+        body = str(func(*args))
+        status = "200 OK"
+    except NameError:
+        status = "404 Not Found"
+        body = "<h1>Not Found</h1>"
+    except Exception:
+        status = "500 Internal Server Error"
+        body = "<h1>Internal Server Error</h1>"
+        print(traceback.format_exc())
+    finally:
+        headers.append(('Content-length', str(len(body))))
+        start_response(status, headers)
+        return [body.encode('utf8')]
+
 
 if __name__ == '__main__':
-    # TODO: Insert the same boilerplate wsgiref simple
+    # DONE: Insert the same boilerplate wsgiref simple
     # server creation that you used in the book database.
-    pass
+    from wsgiref.simple_server import make_server
+    srv = make_server('localhost', 8080, application)
+    srv.serve_forever()
+
